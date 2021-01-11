@@ -1,6 +1,6 @@
 
 
-local ChunkMap = require("ChunkSystem")
+local Chunky = require("Chunky")
 local map
 
 
@@ -8,7 +8,7 @@ function love.load()
 	math.randomseed(os.time()*love.timer.getDelta())
 	love.graphics.setDefaultFilter("nearest", "nearest")
 	love.graphics.setBackgroundColor(.1, .3, .2)
-	map = ChunkMap()
+	map = Chunky()
 end
 
 

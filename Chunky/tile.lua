@@ -23,10 +23,20 @@ function Tile.new(x, y, tiledata)
 	self.x					= x
 	self.y					= y
 	self.world			= convertToWorld(self)
+	self.properties = nil
 	self.color			=	tiledata.color or {1, 1, 1, 1}
 	self.image			= tiledata.image or nil
 	self.quad				= tiledata.quad or nil
 	return self
+end
+
+
+
+function Tile:getSaveData()
+	return {
+		id = self.id,
+		properties = self.properties,
+	}
 end
 
 

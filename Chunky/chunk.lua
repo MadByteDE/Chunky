@@ -5,7 +5,7 @@ Chunk.__index = Chunk
 setmetatable(Chunk, {__call = function(cls, ...) return cls.new(...) end})
 
 local cwd = (...):gsub('%.chunk$', '') .. "."
-local Container	 = require(cwd .. "container")
+local Container	 = require(cwd .. "conta")
 local Layer			 = require(cwd .. "layer")
 
 
@@ -15,7 +15,6 @@ local function convertToWorld(self)
 	local x, y = self.x*w-w, self.y*h-h
 	return {x=x, y=y, width=w, height=h}
 end
-
 
 
 --------------------------------------------------------------------------------------------------------------
@@ -42,6 +41,21 @@ end
 
 function Chunk:getPosition()
 	return self.x, self.y
+end
+
+
+
+function Chunk:getSaveData()
+	local layers = {}
+	local objects = {}
+	self.layers:iterate(function(k, layer) layers[k] = layer:getSaveData() end)
+	self.objects:iterate(function(k, object) objects[k] = object:getSaveData() end)
+	return {
+		x = self.x,
+		y = self.y,
+		layers = layers,
+		objects = objects,
+	}
 end
 
 

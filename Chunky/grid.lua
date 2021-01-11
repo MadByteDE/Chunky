@@ -8,9 +8,9 @@ setmetatable(Grid, {__call = function(cls, ...) return cls.new(...) end})
 
 local function clearGrid(self, width, height)
 	local grid = {}
-	for y=1, height do
+	for y=1, height or self.height do
 		grid[y] = {}
-		for x=1, width do
+		for x=1, width or self.width do
 			grid[y][x] = 0
 		end
 	end
@@ -30,7 +30,22 @@ end
 
 
 
+function Grid:iterate(f)
+	for y=1, self.height do
+		for x=1, self.width do
+			local item = self.grid[y][x]
+			f(x, y, item)
+		end
+	end
+end
+
+
+
 function Grid:set(x, y, item)
+	if not x and not y then
+		self.grid = clearGrid(self)
+		return
+	end
 	local x = math.floor(x)
 	local y = math.floor(y)
 	if self.grid[y] and self.grid[y][x] then
@@ -43,6 +58,7 @@ end
 
 
 function Grid:get(x, y)
+	if not x and not y then return self.grid end
 	local x = math.floor(x)
 	local y = math.floor(y)
 	if self.grid[y] and self.grid[y][x] then
