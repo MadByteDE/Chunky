@@ -2,7 +2,7 @@
 
 A chunk based tile map library for LOVE2D.
 
-:exclamation:**Status**: *very early in development / not ready to use*
+:exclamation:**Status**: *very early stages / not ready to use*
 
 ## Planned features:
 
