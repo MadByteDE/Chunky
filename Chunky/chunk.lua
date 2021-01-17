@@ -11,7 +11,7 @@ local Layer			 = require(cwd .. "layer")
 
 
 local function convertToWorld(self)
-	local w, h = self.width*self.tilesize, self.height*self.tilesize
+	local w, h = self.width*self.tile_size, self.height*self.tile_size
 	local x, y = self.x*w-w, self.y*h-h
 	return {x=x, y=y, width=w, height=h}
 end
@@ -22,18 +22,34 @@ end
 function Chunk.new(x, y, chunkdata)
 	local self = setmetatable({}, Chunk)
 	local chunkdata 	= chunkdata or {}
-	self.tilesize			= chunkdata.tilesize
+	self.tile_size		= chunkdata.tile_size
 	self.x						= x
 	self.y						= y
 	self.width				= chunkdata.width
 	self.height				= chunkdata.height
 	self.visible			= chunkdata.visible or true
 	self.active				= chunkdata.active or true
-	self.layers				= Container()
-	self.objects			= Container()
-	self.world				= convertToWorld(self)
 
+	self.layers = Container()
+	local layerdata
+	if chunkdata.layers then
+		for i=1, #chunkdata.layers do
+			layerdata = chunkdata.layers[i]
+			layerdata.tile_size = self.tile_size
+			layerdata.x = self.x
+			layerdata.y = self.y
+			layerdata.width = chunkdata.width
+			layerdata.height = chunkdata.height
+		end
+	end
 	self:addLayer(layerdata)
+
+	self.objects = Container()
+	if chunkdata.objects then
+		--load objects
+	end
+
+	self.world = convertToWorld(self)
 	return self
 end
 
@@ -62,12 +78,18 @@ end
 
 function Chunk:addLayer(layerdata)
 	local layerdata 	= layerdata or
-	{ tilesize 	= self.tilesize,
+	{ tile_size 	= self.tile_size,
 		x					= self.x,
 		y					= self.y,
 		width 		= self.width,
 		height 		= self.height }
 	return self.layers:add(Layer(layerdata))
+end
+
+
+
+function Chunk:addObject(object, settings)
+	self.objects:add(object, settings)
 end
 
 
@@ -87,6 +109,7 @@ function Chunk:draw()
 	else love.graphics.setColor(1, 1, 1, 1) end
 	love.graphics.rectangle("line", self.world.x, self.world.y, self.world.width, self.world.height)
 	love.graphics.setColor(1, 1, 1, 1)
+	love.graphics.print(#self.layers:get(), self.world.x, self.world.y)
 end
 
 return Chunk

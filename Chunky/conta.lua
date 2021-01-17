@@ -5,7 +5,7 @@
 
 -- Locals --
 local function matchType(item, type)
-  if string.lower(item._flags.type) == string.lower(type) then return true end
+  if string.lower(item._settings.type) == string.lower(type) then return true end
 end
 
 
@@ -28,27 +28,27 @@ function Conta:iterate(f)
 end
 
 
-function Conta:add(item, flags)
+function Conta:add(item, settings)
   self.items[#self.items+1] = item
-  item._flags = {update=true, draw=true, removed=false, priority=0, type=item.type or "item"}
-  self:set(item, flags)
+  item._settings = {update=true, draw=true, removed=false, priority=0, type=item.type or "item"}
+  self:set(item, settings)
   return item
 end
 
 
 function Conta:remove(item)
   local item = self:get(item)
-  item._flags.removed = true
+  item._settings.removed = true
 end
 
 
-function Conta:set(item, flags)
-  if not flags then return end
+function Conta:set(item, settings)
+  if not settings then return end
   local item = self:get(item)
-  for k, v in pairs(flags) do
-    item._flags[k] = v
+  for k, v in pairs(settings) do
+    item._settings[k] = v
   end
-  if flags.priority and item._flags.priority ~= flags.priority then self:sort() end
+  if settings.priority and item._settings.priority ~= settings.priority then self:sort() end
 end
 
 
@@ -64,13 +64,13 @@ function Conta:get(item)
     return res
 
   elseif type(item) == "table" then
-    if item._flags then
+    if item._settings then
       return item
     else
       local types = {}
       for i=1, #item do types[item[i]] = {} end
       self:iterate(function(k,v)
-        local newtype = types[v._flags.type]
+        local newtype = types[v._settings.type]
         if newtype then newtype[#newtype+1] = v end
       end)
       return types
@@ -82,7 +82,7 @@ end
 
 
 function Conta:sort(f)
-  local f = f or function(a, b) return a._flags.priority < b._flags.priority end
+  local f = f or function(a, b) return a._settings.priority < b._settings.priority end
   table.sort(self.items, f)
 end
 
@@ -95,9 +95,9 @@ end
 function Conta:update(dt, type)
   self:iterate(function(k,v)
     if type and not matchType(v, type) then return end
-    if v._flags.removed then table.remove(self.items, k)
+    if v._settings.removed then table.remove(self.items, k)
     else
-      if v.update and v._flags.update then v:update(dt) end
+      if v.update and v._settings.update then v:update(dt) end
     end
   end)
 end
@@ -106,7 +106,7 @@ end
 function Conta:draw(type)
   for k,v in ipairs(self.items) do
     if type and not matchType(v, type) then return end
-    if v.draw and v._flags.draw then v:draw() end
+    if v.draw and v._settings.draw then v:draw() end
   end
 end
 

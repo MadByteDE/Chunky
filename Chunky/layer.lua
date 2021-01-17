@@ -14,8 +14,8 @@ local function generateTiles(self)
 	for y = 1, self.height do
 		for x = 1, self.width do
 			local tiledata = {
-				tilesize 	= self.tilesize,
-				color			= {math.random(.1, 1), 0, 0, 1} }
+				tile_size 	= self.tile_size,
+				color				= {math.random(0, 50)/100, math.random(0, 50)/100, math.random(0, 50)/100, 1} }
 			self:setTile(x, y, tiledata)
 		end
 	end
@@ -24,7 +24,7 @@ end
 
 
 local function convertToWorld(self)
-	local w, h = self.width*self.tilesize, self.height*self.tilesize
+	local w, h = self.width*self.tile_size, self.height*self.tile_size
 	local x, y = self.x*w-w, self.y*h-h
 	return {x=x, y=y, width=w, height=h}
 end
@@ -37,7 +37,7 @@ function Layer.new(layerdata)
 	local self 	= setmetatable({}, Layer)
 	local layerdata = layerdata or {}
 	self.name				= layerdata.name or "Layer"
-	self.tilesize		= layerdata.tilesize
+	self.tile_size	= layerdata.tile_size
 	self.x					= layerdata.x
 	self.y					= layerdata.y
 	self.width			= layerdata.width
@@ -46,9 +46,15 @@ function Layer.new(layerdata)
 		opacity		= layerdata.opacity or .1
 	}
 	self.world			= convertToWorld(self)
-	self.canvas			= love.graphics.newCanvas(self.width*self.tilesize, self.height*self.tilesize)
+	self.canvas			= love.graphics.newCanvas(self.width*self.tile_size, self.height*self.tile_size)
 	self.tiles			= Grid(self.width, self.height)
-	generateTiles(self)
+	if layerdata.tiles then
+		self.tiles:iterate(function(x, y, item)
+			local tiledata = layerdata.tiles[y][x]
+			tiledata.tile_size = self.tile_size
+			self:setTile(x, y, tiledata)
+		end)
+	else generateTiles(self) end
 	self:updateCanvas()
 	return self
 end

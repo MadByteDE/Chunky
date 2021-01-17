@@ -11,13 +11,13 @@ local tinsert = table.insert
 local cwd = (...):gsub('%.chunkFactory$', '') .. "."
 local Grid 	= require(cwd .. "grid")
 local Chunk = require(cwd .. "chunk")
-
+local serialize = require(cwd .. "ser")
 
 
 local function generateChunk(self, x, y)
-	local chunkdata = { tilesize	= self.tilesize,
-											width 		= self.tilesW,
-											height		= self.tilesH }
+	local chunkdata = { tile_size	= self.tile_size,
+											width 		= self.tiles_x,
+											height		= self.tiles_y }
 	return self:addChunk(x, y, chunkdata)
 end
 
@@ -25,19 +25,17 @@ end
 
 --------------------------------------------------------------------------------------------------------------
 
-function ChunkFactory.new(mapdata)
+function ChunkFactory.new(settings)
 	local self = setmetatable({}, ChunkFactory)
-	local mapdata			= mapdata or {}
-	self.tilesize			= mapdata.tilesize
-	self.chunksW			= mapdata.chunksW or 10
-	self.chunksH			= mapdata.chunksH or 10
-	self.tilesW				= mapdata.tilesW or 64
-	self.tilesH				= mapdata.tilesH or 64
-	self.chunks 			= Grid(self.chunksW, self.chunksH)
-
-	--local x, y = math.ceil(self.chunksW/2), math.ceil(self.chunksH/2)
-	--local chunk = generateChunk(self, x, y)
-	--self:setCurrentChunk(chunk)
+	self.map_name		= settings.map_name
+	self.tile_size	= settings.tile_size
+	self.chunks_x		= settings.chunks_x or 10
+	self.chunks_y		= settings.chunks_y or 10
+	self.tiles_x		= settings.tiles_x or 64
+	self.tiles_y		= settings.tiles_y or 64
+	self.load_dist 	= settings.load_dist or 1
+	self.active_dist= settings.active_dist or 0
+	self.chunks			= Grid(self.chunks_x, self.chunks_y)
 	return self
 end
 
@@ -65,38 +63,70 @@ end
 
 
 
-function ChunkFactory:setCurrentChunk(chunk)
-	if not chunk then return end
+function ChunkFactory:setMainChunk(x, y)
+	local chunk = self:getChunk(x, y)
+	if not chunk or type(chunk) == "number" then return end
 
-	if self.currentChunk then
-		self.currentChunk.active = false
-		for k, neighbor in pairs(self:getNeighbors(self.currentChunk)) do
+	if self.main_chunk then
+		local x, y = self.main_chunk:getPosition()
+		for k, neighbor in pairs(self:getNeighbors(x, y)) do
 			if type(neighbor) == "table" then
-				neighbor.active = false
-				neighbor.visible = false
+				self:unloadChunk(x, y)
 			end
 		end
 	end
 
-	self.currentChunk = chunk
-	self.currentChunk.active = true
-	for k, neighbor in pairs(self:getNeighbors(self.currentChunk)) do
+	self.main_chunk = chunk
+	self.main_chunk.active = true
+	for k, neighbor in pairs(self:getNeighbors(x, y)) do
 		if type(neighbor) == "table" then
 			neighbor.active = true
 			neighbor.visible = true
 		end
 	end
-	return self.currentChunk
+	return self.main_chunk
 end
 
 
 
 function ChunkFactory:loadChunk(x, y)
+	local load_path = self.map_name.."/chunks/"..x.."-"..y..".dat"
+	-- File found? Then load chunk data
+	if love.filesystem.getInfo(load_path) then
+		local chunkdata = love.filesystem.load(load_path)()
+		chunkdata.tile_size = self.tile_size
+		chunkdata.width = self.tiles_x
+		chunkdata.height = self.tiles_y
+		return self:addChunk(x, y, chunkdata)
+	else
+		return generateChunk(self, x, y)
+	end
 end
 
 
 
 function ChunkFactory:unloadChunk(x, y)
+	local unload_path = "/"..self.map_name.."/chunks/"
+	-- Create level directory if necessary
+	if not love.filesystem.getInfo(unload_path) then
+		love.filesystem.createDirectory(unload_path)
+	end
+
+	local chunk = self:getChunk(x, y)
+	if type(chunk) == "number" then return end
+
+	-- Set output
+	local chunkfile_path = love.filesystem.getSaveDirectory()..unload_path..x.."-"..y..".dat"
+
+	-- Get save data and write it to the file
+	local save_data = serialize(chunk:getSaveData())
+
+	-- Save file
+	local chunkfile_handle = io.open(chunkfile_path, "w+")
+	chunkfile_handle:write(save_data)
+	chunkfile_handle:close()
+
+	self.chunks:set(x, y, 0)
 end
 
 
@@ -104,27 +134,25 @@ end
 function ChunkFactory:updateProximity(x, y, camx, camy, scale)
 	-- ! Load proximity chunks
 	-- ! unload chunks not in proximity
-	local wx = floor(((x + camx) / self.tilesW  / self.tilesize / scale) + 1)
-	local wy = floor(((y + camy) / self.tilesH / self.tilesize / scale) + 1)
+	local wx = floor(((x + camx) / self.tiles_x  / self.tile_size / scale) + 1)
+	local wy = floor(((y + camy) / self.tiles_y / self.tile_size / scale) + 1)
 	local chunk = self:getChunk(wx, wy)
-	if chunk == self.currentChunk then return end
+	if chunk == self.main_chunk then return end
+
 
 	-- Generate new random chunk --
-	if type(chunk) == "number" then chunk = generateChunk(self, wx, wy) end
-	print(chunk)
+	if type(chunk) == "number" then self:loadChunk(wx, wy) end
 	-- Set the chunk as currently selected --
-	self:setCurrentChunk(chunk)
+	self:setMainChunk(wx, wy)
 end
 
 
 
-function ChunkFactory:getNeighbors(chunk, radius)
-	if not chunk then return end
-	local x, y = chunk:getPosition()
-	local radius = radius or 1
+function ChunkFactory:getNeighbors(x, y, load_dist)
+	local load_dist = load_dist or self.load_dist
 	local neighbors = {}
-	for ny = -radius, radius do
-		for nx = -radius, radius do
+	for ny = -load_dist, load_dist do
+		for nx = -load_dist, load_dist do
 			local neighbor = self:getChunk(x+nx, y+ny)
 			if neighbor and neighbor ~= 0 then tinsert(neighbors, neighbor) end
 		end

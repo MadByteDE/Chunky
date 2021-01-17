@@ -7,7 +7,7 @@ setmetatable(Tile, {__call = function(cls, ...) return cls.new(...) end})
 
 
 local function convertToWorld(self)
-	local x, y = self.x*self.tilesize-self.tilesize, self.y*self.tilesize-self.tilesize
+	local x, y = self.x*self.tile_size-self.tile_size, self.y*self.tile_size-self.tile_size
 	return {x=x, y=y}
 end
 
@@ -19,7 +19,7 @@ function Tile.new(x, y, tiledata)
 	local self = setmetatable({}, Tile)
 	local tiledata	= tiledata or {}
 	self.id					= tiledata.id or 0
-	self.tilesize 	= tiledata.tilesize or 16
+	self.tile_size 	= tiledata.tile_size or 16
 	self.x					= x
 	self.y					= y
 	self.world			= convertToWorld(self)
@@ -36,6 +36,7 @@ function Tile:getSaveData()
 	return {
 		id = self.id,
 		properties = self.properties,
+		color = self.color,
 	}
 end
 
@@ -49,7 +50,7 @@ end
 function Tile:draw()
 	local previousColor = {love.graphics.getColor()}
 	love.graphics.setColor(self.color)
-	love.graphics.rectangle("fill", self.world.x, self.world.y, self.tilesize, self.tilesize)
+	love.graphics.rectangle("fill", self.world.x, self.world.y, self.tile_size, self.tile_size)
 	love.graphics.setColor(previousColor)
 end
 

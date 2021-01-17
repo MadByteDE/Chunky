@@ -8,17 +8,30 @@ local cwd = (...):gsub('%.init$', '') .. "."
 local Camera			 = require(cwd .. "camera")
 local ChunkFactory = require(cwd .. "chunkFactory")
 
+local settings = {
+	map_name 						= "default",
+	tileset_name				= "",
+	tileset_path				= "",
+	tile_size 					= 16,
+	chunks_x 						= 16,
+	chunks_y 						= 16,
+	tiles_x 						= 64,
+	tiles_y							= 64,
+	tile_size 					= 16,
+	save_interval 			= 0,
+	lazy_chunk_loading 	= false,
+	update_interval 		= 0,
+}
 
 --------------------------------------------------------------------------------------------------------------
--- mapdata: tilesize, chunksW, chunksH, tilesW, tilesH
-function Map.new(mapdata)
+
+function Map.new(custom_settings)
 	local self 	= setmetatable({}, Map)
-	local mapdata = mapdata or {tilesize = 16}
-	self.tilesize			= mapdata.tilesize
-	self.camera				= Camera()
+	for k,v in pairs(custom_settings or {}) do settings[k] = custom_settings[k] end
+	self.camera	= Camera()
 	self.camera:setScale(.05)
 	self.camera:setSpeed(400)
-	self.chunkFactory = ChunkFactory(mapdata)
+	self.chunkFactory = ChunkFactory(settings)
 	return self
 end
 

@@ -34,6 +34,11 @@ end
 
 
 
+function love.quit()
+end
+
+
+
 function love.wheelmoved(x, y)
 	map:wheelmoved(x, y)
 end
