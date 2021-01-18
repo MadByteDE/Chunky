@@ -15,7 +15,7 @@ local function generateTiles(self)
 		for x = 1, self.width do
 			local tiledata = {
 				tile_size 	= self.tile_size,
-				color				= {math.random(0, 50)/100, math.random(0, 50)/100, math.random(0, 50)/100, 1} }
+				color				= {math.random(50)/100, math.random(50)/100, math.random(50)/100, 1} }
 			self:setTile(x, y, tiledata)
 		end
 	end

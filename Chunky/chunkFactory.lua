@@ -8,10 +8,10 @@ local floor = math.floor
 local pairs = pairs
 local tinsert = table.insert
 
-local cwd = (...):gsub('%.chunkFactory$', '') .. "."
-local Grid 	= require(cwd .. "grid")
-local Chunk = require(cwd .. "chunk")
-local serialize = require(cwd .. "ser")
+local rel_path = (...):gsub('%.chunkFactory$', '') .. "."
+local Grid 	= require(rel_path .. "grid")
+local Chunk = require(rel_path .. "chunk")
+local bitser = require(rel_path .. "bitser")
 
 
 local function generateChunk(self, x, y)
@@ -93,7 +93,9 @@ function ChunkFactory:loadChunk(x, y)
 	local load_path = self.map_name.."/chunks/"..x.."-"..y..".dat"
 	-- File found? Then load chunk data
 	if love.filesystem.getInfo(load_path) then
-		local chunkdata = love.filesystem.load(load_path)()
+		-- load file
+		local binary_data = love.filesystem.read(load_path)
+		local chunkdata = bitser.loads(binary_data)
 		chunkdata.tile_size = self.tile_size
 		chunkdata.width = self.tiles_x
 		chunkdata.height = self.tiles_y
@@ -116,15 +118,13 @@ function ChunkFactory:unloadChunk(x, y)
 	if type(chunk) == "number" then return end
 
 	-- Set output
-	local chunkfile_path = love.filesystem.getSaveDirectory()..unload_path..x.."-"..y..".dat"
+	local chunkfile_path = unload_path..x.."-"..y..".dat"
 
 	-- Get save data and write it to the file
-	local save_data = serialize(chunk:getSaveData())
+	local save_data = bitser.dumps(chunk:getSaveData())
 
 	-- Save file
-	local chunkfile_handle = io.open(chunkfile_path, "w+")
-	chunkfile_handle:write(save_data)
-	chunkfile_handle:close()
+	love.filesystem.write(chunkfile_path, save_data)
 
 	self.chunks:set(x, y, 0)
 end
